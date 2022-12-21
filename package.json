@@ -1,0 +1,16 @@
+{
+  "name": "gaston-discord-bot",
+  "version": "1.0.0",
+  "description": "gaston discord bot - personal use",
+  "main": "index.js",
+  "scripts": {},
+  "keywords": [
+    "discord",
+    "bot"
+  ],
+  "author": "oscarvgrainger@gmail.com",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^14.7.1"
+  }
+}
