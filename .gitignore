@@ -1,3 +1,4 @@
+config.json
 ###Project
 src/main/webapp
 src/main/resources/public
@@ -147,3 +148,5 @@ atlassian-ide-plugin.xml
 com_crashlytics_export_strings.xml
 crashlytics.properties
 crashlytics-build.properties
+!/config.json
+.env.local
