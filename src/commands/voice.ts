@@ -5,10 +5,9 @@ import {
   joinVoiceChannel,
   StreamType
 } from "@discordjs/voice";
-
 import {join} from "node:path";
 
-import {ChatInputCommandInteraction, SlashCommandBuilder} from "discord.js";
+import {ChatInputCommandInteraction, SlashCommandBuilder, ChannelType} from "discord.js";
 
 import {setTimeout as wait} from "node:timers/promises";
 import {ChatInputCommand} from "../types/ChatInputCommand";
@@ -27,34 +26,62 @@ import {ChatInputCommand} from "../types/ChatInputCommand";
 //   }
 // }
 
+const CHANNEL = 'canal'
+const SOUND = 'son'
+const FILE = 'fichier'
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('test-voice')
     .setDescription('test voice')
-    .addChannelOption(option => option.setName("channel").setDescription("Canal à rejoindre").setRequired(true))
-    .addAttachmentOption(option => option.setName("file").setDescription("Fichier à lire"))
-    .addStringOption(option => option.setName("intern_file").setChoices({
-      value: 'prout.ogg',
-      name: 'prout'
-    }).setDescription("Fichier interne à lire")),
+    .addChannelOption(option => option.setName(CHANNEL).setDescription("Canal à rejoindre").setRequired(true).addChannelTypes(ChannelType.GuildVoice))
+    .addStringOption(option => option.setName(SOUND).setChoices(
+      {value: 'prout.ogg', name: 'prout'},
+      {value: 'bah_oui_connard.mp3', name: 'bah oui connard'},
+    ).setDescription("Son parmi ceux dispos"))
+    .addAttachmentOption(option => option.setName(FILE).setDescription("Utiliser son propre fichier audio"))
+  ,
   async execute(interaction: ChatInputCommandInteraction) {
+    await interaction.deferReply();
 
-    const channel = interaction.options.getChannel('channel', true)
-    const _file = interaction.options.getAttachment('file')
-    const _internFile = interaction.options.getString('intern_file')
-    console.log(_file)
-    console.log(_internFile)
+    if (!interaction.guild) {
+      console.error('interaction.guild not found')
+      await interaction.editReply('Problème interne :(')
+      return
+    }
+    const channel = interaction.options.getChannel(CHANNEL, true)
+
+    if (!channel) {
+      console.error('channel not found')
+      await interaction.editReply('Problème interne :(')
+      return
+    }
+
+    if (channel.type !== ChannelType.GuildVoice) {
+      console.error('Selected channel is not of type voice')
+      await interaction.editReply('La canal choisi n\'est pas de type audio')
+      return
+    }
 
 
-    const player = createAudioPlayer({debug: true})
+    // Optionals
+    const sound = interaction.options.getString(SOUND)
+    const userFile = interaction.options.getAttachment(FILE)
 
-    player.on('debug', (e) => console.log(e))
+    // if (!sound && !userFile) {
+    if (!sound) {
+      console.error('No sound or userFile found')
+      await interaction.editReply('Veuillez renseigner au minimum un son ou un fichier audio')
+      return
 
+    }
+
+    const player = createAudioPlayer()
 
     const connection = joinVoiceChannel({
-      channelId: channel.id || '', // TODO default
-      guildId: channel.guildId || '', // TODO default
-      adapterCreator: interaction.guild.voiceAdapterCreator, // TODO null safe
+      channelId: channel.id,
+      guildId: channel.guildId,
+      adapterCreator: interaction.guild.voiceAdapterCreator,
       // selfDeaf: false,
       // selfMute: false,
       // debug: true,
@@ -65,13 +92,11 @@ module.exports = {
 
     await wait(500)
 
-    const file = join(__dirname, '../assets/', _internFile || 'prout.ogg')
-    let resource = createAudioResource(file, {inputType: StreamType.OggOpus});
+    const file = join(__dirname, '../assets/', sound)
+    let resource = createAudioResource(file);
 
     player.play(resource)
-    await interaction.reply(`Now playing ${_internFile || 'prout.ogg'}`)
-
-    await wait(5000)
+    await interaction.editReply(`Now playing ${file}`)
 
     player.on(AudioPlayerStatus.AutoPaused, async () => {
       await wait(1000)
