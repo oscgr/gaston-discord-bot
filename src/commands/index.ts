@@ -1,13 +1,10 @@
-import * as Voice from './voice'
-import * as JoinVocal from './joinVocal'
+import * as Bit from './bit'
 import {ChatInputCommand} from "../types/ChatInputCommand";
 
 export {
-  Voice,
-  JoinVocal,
+  Bit,
 }
 
 export default [
-  Voice,
-  JoinVocal,
+  Bit,
 ] as ChatInputCommand[]

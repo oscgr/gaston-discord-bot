@@ -1,12 +1,35 @@
 import * as dotenv from 'dotenv' // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
-import {Client, Collection, Events, GatewayIntentBits} from "discord.js";
+import {ActivityType, Client, Collection, Events, GatewayIntentBits} from "discord.js";
 import commands from './commands'
 
 (async () => {
   dotenv.config()
 
 // Create a new client instance
-  const client = new Client({intents: [GatewayIntentBits.GuildVoiceStates]});
+  const client = new Client({
+    presence: {activities: [{name: '/quid', type: ActivityType.Watching}]},
+    intents: [
+      GatewayIntentBits.Guilds,
+      GatewayIntentBits.GuildMembers,
+      GatewayIntentBits.GuildBans,
+      GatewayIntentBits.GuildEmojisAndStickers,
+      GatewayIntentBits.GuildIntegrations,
+      GatewayIntentBits.GuildWebhooks,
+      GatewayIntentBits.GuildInvites,
+      GatewayIntentBits.GuildVoiceStates,
+      GatewayIntentBits.GuildPresences,
+      GatewayIntentBits.GuildMessages,
+      GatewayIntentBits.GuildMessageReactions,
+      GatewayIntentBits.GuildMessageTyping,
+      GatewayIntentBits.DirectMessages,
+      GatewayIntentBits.DirectMessageReactions,
+      GatewayIntentBits.DirectMessageTyping,
+      GatewayIntentBits.MessageContent,
+      GatewayIntentBits.GuildScheduledEvents,
+      GatewayIntentBits.AutoModerationConfiguration,
+      GatewayIntentBits.AutoModerationExecution,
+    ]
+  });
 
 // When the client is ready, run this code (only once)
 // We use 'c' for the event parameter to keep it separate from the already defined 'client'
@@ -42,8 +65,6 @@ import commands from './commands'
     }
   });
 
-
-  client.user?.setPresence({activities: [{name: 'Allo'}], status: 'idle'});
 
   process.on('unhandledRejection', error => {
     console.error('Unhandled promise rejection:', error);
