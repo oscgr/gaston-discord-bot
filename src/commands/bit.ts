@@ -24,15 +24,19 @@ const CHANNEL = 'canal'
 const SOUND = 'son'
 const FILE = 'fichier'
 
+const extractFileOptions = () => {
+  const dir = readdirSync(join(__dirname, PATH_TO_ASSETS))
+  return dir.map(file => ({
+    value: file,
+    name: file.replaceAll('_', ' ').split('.')[0]
+  }))
+}
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('bit')
     .setDescription('Sound bit à jouer')
     .addChannelOption(option => option.setName(CHANNEL).setDescription("Canal à rejoindre").addChannelTypes(ChannelType.GuildVoice))
-    .addStringOption(option => option.setName(SOUND).setChoices(
-      {value: 'prout.ogg', name: 'prout'},
-      {value: 'bah_oui_connard.mp3', name: 'bah oui connard'},
-    ).setDescription("Son parmi ceux dispos"))
+    .addStringOption(option => option.setName(SOUND).setChoices(...extractFileOptions()).setDescription("Son parmi ceux dispos"))
     .addAttachmentOption(option => option.setName(FILE).setDescription("Utiliser son propre fichier audio"))
   ,
   async execute(interaction: ChatInputCommandInteraction) {
