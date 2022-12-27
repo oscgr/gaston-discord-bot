@@ -4,9 +4,7 @@
   "description": "gaston discord bot - personal use",
   "main": "index.js",
   "scripts": {
-    "launch:full": "pnpm run deploy-commands && pnpm run launch",
-    "launch": "ts-node src/index.ts",
-    "deploy-commands": "ts-node src/deployCommands.ts",
+    "launch": "ts-node src/index.ts | pino-pretty -i pid,hostname -t 'yyyy-mm-dd HH:MM:ss'",
     "debug:voice-dependencies": "ts-node scripts/debugVoice.ts"
   },
   "keywords": [
@@ -21,6 +19,7 @@
     "discord.js": "^14.7.1",
     "dotenv": "^16.0.3",
     "ffmpeg-static": "^5.1.0",
+    "pino": "^8.8.0",
     "libsodium-wrappers": "^0.7.10",
     "lodash": "^4.17.21",
     "opusscript": "^0.0.8",
@@ -29,6 +28,7 @@
   "devDependencies": {
     "@types/lodash": "^4.14.191",
     "@types/node": "^18.11.17",
+    "pino-pretty": "^9.1.1",
     "@typescript-eslint/eslint-plugin": "^5.47.0",
     "@typescript-eslint/parser": "^5.47.0",
     "eslint": "^8.30.0",

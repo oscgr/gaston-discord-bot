@@ -1,9 +1,14 @@
 import * as dotenv from 'dotenv' // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
 import {ActivityType, Client, Collection, Events, GatewayIntentBits} from "discord.js";
 import commands from './commands'
+import logger from "./helpers/logger";
+import {deployCommands} from "./deployCommands";
 
 (async () => {
   dotenv.config()
+
+  if (process.env.DEPLOY_COMMANDS)
+    await deployCommands()
 
 // Create a new client instance
   const client = new Client({
@@ -31,12 +36,6 @@ import commands from './commands'
     ]
   });
 
-// When the client is ready, run this code (only once)
-// We use 'c' for the event parameter to keep it separate from the already defined 'client'
-  client.once(Events.ClientReady, c => {
-    console.log(`Ready! Logged in as ${c.user.tag}`);
-  });
-
   client.commands = new Collection();
 
 
@@ -53,22 +52,27 @@ import commands from './commands'
     const command = interaction.client.commands.get(interaction.commandName);
 
     if (!command) {
-      console.error(`No command matching ${interaction.commandName} was found.`);
+      logger.error(`No command matching ${interaction.commandName} was found.`);
       return;
     }
 
     try {
       await command.execute(interaction);
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       await interaction.reply({content: 'There was an error while executing this command!', ephemeral: true});
     }
   });
 
 
   process.on('unhandledRejection', error => {
-    console.error('Unhandled promise rejection:', error);
+    logger.error('Unhandled promise rejection:', error);
   });
+
+  client.on(Events.ClientReady, (c) => logger.info(`Bot online - logged in as ${c.user.tag}`));
+  client.on(Events.Debug, m => logger.debug(m));
+  client.on(Events.Warn, m => logger.warn(m));
+  client.on(Events.Error, m => logger.error(m));
 
   // Log in to Discord with your client's token
   await client.login(process.env.TOKEN);

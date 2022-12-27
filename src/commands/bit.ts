@@ -1,28 +1,17 @@
 import {AudioPlayerStatus, createAudioPlayer, createAudioResource, joinVoiceChannel} from "@discordjs/voice";
 import {join} from "node:path";
-
 import {ChannelType, ChatInputCommandInteraction, GuildMember, SlashCommandBuilder} from "discord.js";
 
 import {setTimeout as wait} from "node:timers/promises";
 import {ChatInputCommand} from "../types/ChatInputCommand";
-
-// const start = async (player, resource) => {
-//   player.play(resource);
-//   try {
-//     await entersState(player, AudioPlayerStatus.Playing, 5_000);
-//     // The player has entered the Playing state within 5 seconds
-//     console.log('Playback has started! Resource lasts for ' + resource.playbackDuration + 's');
-//   } catch (error) {
-//     // The player has not entered the Playing state and either:
-//     // 1) The 'error' event has been emitted and should be handled
-//     // 2) 5 seconds have passed
-//     console.error(error);
-//   }
-// }
+import {formatError, formatStandard} from "../helpers/replyFormatter";
+import {readdirSync} from "fs";
+import logger from "../helpers/logger";
 
 const CHANNEL = 'canal'
 const SOUND = 'son'
 const FILE = 'fichier'
+const PATH_TO_ASSETS = '../assets/bits'
 
 const extractFileOptions = () => {
   const dir = readdirSync(join(__dirname, PATH_TO_ASSETS))
@@ -40,11 +29,12 @@ module.exports = {
     .addAttachmentOption(option => option.setName(FILE).setDescription("Utiliser son propre fichier audio"))
   ,
   async execute(interaction: ChatInputCommandInteraction) {
-    await interaction.deferReply();
+    await interaction.deferReply({ephemeral: true});
 
+    extractFileOptions()
     if (!interaction.guild) {
-      console.error('interaction.guild not found')
-      await interaction.editReply('Problème interne :(')
+      logger.error('interaction.guild not found')
+      await interaction.editReply(formatError('Problème interne'))
       return
     }
 
@@ -53,14 +43,14 @@ module.exports = {
     const channel = interaction.options.getChannel(CHANNEL) || fetchedMember.voice.channel
 
     if (!channel) {
-      console.error('No channel provided')
-      await interaction.editReply('Aucun canal vocal trouvé')
+      logger.error('No channel provided')
+      await interaction.editReply(formatError('Aucun canal vocal trouvé'))
       return
     }
 
     if (channel.type !== ChannelType.GuildVoice) {
-      console.error('Selected channel is not of type voice')
-      await interaction.editReply('La canal choisi n\'est pas de type audio')
+      logger.error('Selected channel is not of type voice')
+      await interaction.editReply(formatError('Le canal choisi n\'est pas de type audio'))
       return
     }
 
@@ -70,22 +60,21 @@ module.exports = {
     const userFile = interaction.options.getAttachment(FILE)
 
     if (!sound && !userFile) {
-      console.error('No sound or userFile found')
-      await interaction.editReply('Veuillez renseigner au minimum un son ou un fichier audio')
+      logger.error('No sound or userFile found')
+      await interaction.editReply(formatError('Veuillez renseigner au minimum un son ou un fichier audio'))
       return
 
     }
     if (sound && userFile) {
-      console.error('Both sound and userFile found')
-      await interaction.editReply('Veuillez renseigner soit un son, soit un fichier audio')
+      logger.error('Both sound and userFile found')
+      await interaction.editReply(formatError('Veuillez renseigner soit un son, soit un fichier audio'))
       return
 
     }
 
-    // Limit files to 5 Mo for now - todo env var ?
-    if (userFile && userFile.size > 5000000) {
-      console.error('Both sound and userFile found')
-      await interaction.editReply(`Veuillez envoyer un fichier audio pesant moins de 5 Mo. Le votre fait ${Math.round(userFile.size / 1000000)} Mo`)
+    if (userFile && userFile.size > Number(process.env.MAX_FILE_SIZE)) {
+      logger.error('File too large')
+      await interaction.editReply(formatError(`Veuillez envoyer un fichier audio pesant moins de ${process.env.MAX_FILE_SIZE/1000} ko. Le votre fait ${Math.round(userFile.size / 1000)} ko`))
       return
 
     }
@@ -102,12 +91,12 @@ module.exports = {
     await wait(500)
 
     if (sound) {
-      const file = join(__dirname, '../assets/', sound)
+      const file = join(__dirname, PATH_TO_ASSETS, sound)
       player.play(createAudioResource(String(file)))
-      await interaction.editReply(`Son joué : ${sound}`)
+      await interaction.editReply(formatStandard({name: 'Son joué', description: sound, author: fetchedMember.user.username}))
     } else if (userFile) {
       player.play(createAudioResource(String(userFile?.attachment)))
-      await interaction.editReply(`Fichier personnel utilisé : ${userFile?.name}`)
+      await interaction.editReply(formatStandard({name: 'Fichier perso joué', description: userFile?.name || 'nom inconnu', author: fetchedMember.user.username}))
     }
 
 
