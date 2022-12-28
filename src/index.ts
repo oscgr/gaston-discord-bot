@@ -3,6 +3,8 @@ import {ActivityType, Client, Collection, Events, GatewayIntentBits} from "disco
 import commands from './commands'
 import logger from "./helpers/logger";
 import {deployCommands} from "./deployCommands";
+import ms = require("ms");
+import {formatStandard} from "./helpers/replyFormatter";
 
 (async () => {
   dotenv.config()
@@ -47,26 +49,34 @@ import {deployCommands} from "./deployCommands";
   }
 
   client.on(Events.InteractionCreate, async interaction => {
-    if (!interaction.isChatInputCommand()) return;
+    if (interaction.isChatInputCommand()) {
+      const command = interaction.client.commands.get(interaction.commandName);
 
-    const command = interaction.client.commands.get(interaction.commandName);
+      if (!command) {
+        logger.error(`No command matching ${interaction.commandName} was found.`);
+        return;
+      }
 
-    if (!command) {
-      logger.error(`No command matching ${interaction.commandName} was found.`);
-      return;
+      try {
+        const start = Date.now();
+        const subcommand = interaction.options.getSubcommand()
+        logger.info(`Executing slash command "${interaction.commandName}${subcommand ? ' ' : ''}${subcommand ? subcommand : ''}"...`)
+        await command.execute(interaction);
+        logger.info(`Executed slash command "${interaction.commandName}${subcommand ? ' ' : ''}${subcommand ? subcommand : ''}" in ${ms(Date.now() - start)}`)
+      } catch (error) {
+        logger.error(error);
+        await interaction.reply({content: 'There was an error while executing this command!', ephemeral: true});
+      }
+    } else {
+      logger.warn(`Command with interaction ID ${interaction.id} is not implemented already`)
     }
 
-    try {
-      await command.execute(interaction);
-    } catch (error) {
-      logger.error(error);
-      await interaction.reply({content: 'There was an error while executing this command!', ephemeral: true});
-    }
   });
 
 
   process.on('unhandledRejection', error => {
-    logger.error('Unhandled promise rejection:', error);
+    logger.error('Unhandled promise rejection:');
+    console.log(error) // pino doesn't display error todo need to find a way
   });
 
   client.on(Events.ClientReady, (c) => logger.info(`Bot online - logged in as ${c.user.tag}`));

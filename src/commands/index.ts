@@ -1,10 +1,10 @@
-import * as Bit from './bit'
+import * as Son from './son'
 import {ChatInputCommand} from "../types/ChatInputCommand";
 
 export {
-  Bit,
+  Son,
 }
 
 export default [
-  Bit,
+  Son,
 ] as ChatInputCommand[]

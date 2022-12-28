@@ -3,7 +3,6 @@ import {EmbedBuilder, InteractionEditReplyOptions, MessagePayload} from "discord
 export interface StandardReplyOptions {
   name: string
   description: string
-  author: string
 }
 const formatStandard = (options: StandardReplyOptions):MessagePayload | InteractionEditReplyOptions => {
   const embeds = new EmbedBuilder()
