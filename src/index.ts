@@ -59,7 +59,7 @@ import {formatStandard} from "./helpers/replyFormatter";
 
       try {
         const start = Date.now();
-        const subcommand = interaction.options.getSubcommand()
+        const subcommand = interaction.options.getSubcommand(false)
         logger.info(`Executing slash command "${interaction.commandName}${subcommand ? ' ' : ''}${subcommand ? subcommand : ''}"...`)
         await command.execute(interaction);
         logger.info(`Executed slash command "${interaction.commandName}${subcommand ? ' ' : ''}${subcommand ? subcommand : ''}" in ${ms(Date.now() - start)}`)
