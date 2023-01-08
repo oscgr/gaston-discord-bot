@@ -1,11 +1,11 @@
-import {EmbedBuilder, InteractionEditReplyOptions, MessagePayload} from "discord.js";
+import {EmbedBuilder, InteractionEditReplyOptions, InteractionReplyOptions, MessagePayload} from "discord.js";
 
 export interface StandardReplyOptions {
   name: string
   description: string
   thumbnail?: string
 }
-const formatStandard = (options: StandardReplyOptions):MessagePayload | InteractionEditReplyOptions => {
+const formatStandard = (options: StandardReplyOptions, ephemeral: boolean = true) => {
   let embeds = new EmbedBuilder()
     .setColor('#0e8300')
     .addFields([{name: options.name, value: options.description}])
@@ -13,9 +13,9 @@ const formatStandard = (options: StandardReplyOptions):MessagePayload | Interact
   if (options.thumbnail)
     embeds = embeds.setThumbnail(options.thumbnail)
 
-  return { embeds: [embeds], options: {ephemeral: true} }
+  return { embeds: [embeds], options: {ephemeral} }
 }
-const formatError = (description: string):MessagePayload | InteractionEditReplyOptions => {
+const formatError = (description: string) => {
   const embeds = new EmbedBuilder()
     .setColor('#830000')
     .addFields([{name: 'Erreur', value: description}])
