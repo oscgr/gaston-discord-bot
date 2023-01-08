@@ -3,11 +3,15 @@ import {EmbedBuilder, InteractionEditReplyOptions, MessagePayload} from "discord
 export interface StandardReplyOptions {
   name: string
   description: string
+  thumbnail?: string
 }
 const formatStandard = (options: StandardReplyOptions):MessagePayload | InteractionEditReplyOptions => {
-  const embeds = new EmbedBuilder()
+  let embeds = new EmbedBuilder()
     .setColor('#0e8300')
     .addFields([{name: options.name, value: options.description}])
+
+  if (options.thumbnail)
+    embeds = embeds.setThumbnail(options.thumbnail)
 
   return { embeds: [embeds], options: {ephemeral: true} }
 }

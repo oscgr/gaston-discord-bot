@@ -6,28 +6,26 @@ import {
   joinVoiceChannel
 } from "@discordjs/voice";
 import {join} from "node:path";
-import {
-  ChannelType,
-  ChatInputCommandInteraction,
-  GuildMember,
-  SlashCommandBuilder,
-  ButtonStyle,
-} from "discord.js";
+import {ButtonStyle, ChannelType, ChatInputCommandInteraction, GuildMember, SlashCommandBuilder,} from "discord.js";
 
 import {setTimeout as wait} from "node:timers/promises";
 import {ChatInputCommand} from "../types/ChatInputCommand";
 import {formatError, formatStandard} from "../helpers/replyFormatter";
-import {readdirSync} from "fs";
+import {existsSync, readdirSync} from "fs";
 import logger from "../helpers/logger";
+import * as youtubeDl from 'youtube-dl-exec'
 
 const CHANNEL = 'canal'
 const SOUND = 'son'
 const FILE = 'fichier'
-const PATH_TO_ASSETS = '../assets/bits'
+const URL = 'lien'
+const PATH_TO_ASSETS = '../assets'
+const PATH_TO_BITS = '/bits/'
+const PATH_TO_TEMP = '/temp/'
 
 const prettifyFileName = (file: string) => file.replaceAll('_', ' ').split('.')[0]
 const extractFileOptions = () => {
-  const dir = readdirSync(join(__dirname, PATH_TO_ASSETS))
+  const dir = readdirSync(join(__dirname, PATH_TO_ASSETS, PATH_TO_BITS))
   return dir.map(file => ({
     value: file,
     name: prettifyFileName(file)
@@ -40,6 +38,8 @@ const getSubcommandFn = (subcommand?: string) => {
       return subcommands.liste
     case 'fichier':
       return subcommands.fichier
+    case 'youtube':
+      return subcommands.youtube
     default:
       return null
   }
@@ -55,12 +55,61 @@ const subcommands = {
 
     if (userFile && userFile.size > Number(process.env.MAX_FILE_SIZE)) {
       logger.error('File too large')
-      await interaction.editReply(formatError(`Veuillez envoyer un fichier audio pesant moins de ${Number(process.env.MAX_FILE_SIZE)/1000} ko. Le votre fait ${Math.round(userFile.size / 1000)} ko`))
+      await interaction.editReply(formatError(`Veuillez envoyer un fichier audio pesant moins de ${Number(process.env.MAX_FILE_SIZE) / 1000} ko. Le votre fait ${Math.round(userFile.size / 1000)} ko`))
       return null
     }
     await interaction.editReply(formatStandard({name: 'Fichier perso', description: userFile?.name || 'nom inconnu'}))
 
     return String(userFile?.attachment) || null
+  },
+  youtube: async (interaction: ChatInputCommandInteraction) => {
+    const link = interaction.options.getString(URL, true)
+
+    logger.info(`Trying to read link ${link}...`)
+
+    // INFO This does not return file, only informations - downloaded file is in project root
+
+    const output = join(__dirname, PATH_TO_ASSETS, PATH_TO_TEMP, '%(id)s.%(ext)s')
+
+    logger.info(`Output format: ${output}`)
+
+    // @ts-ignore // todo ts typing is wrong
+    // const file = await youtubeDl.default(link, {
+    const [file] = await Promise.all([
+      youtubeDl(link, {
+        dumpSingleJson: true, // to output infos in promise
+        noCheckCertificates: true, // ignore https check
+        // format: 'ba', // best audio todo worst video?
+        // extractAudio: true, // worsen cpu load as it does not download in format but converts after download (ffmpeg)
+        // audioFormat: 'mp3', // see above
+        addHeader: [ // recommended
+          'referer:youtube.com',
+          'user-agent:googlebot'
+        ]
+      }),
+      youtubeDl(link, {
+        noCheckCertificates: true, // ignore https check
+        output,
+        noPlaylist: true, // TODO in the future...
+        // format: 'ba', // best audio todo worst video?
+        // extractAudio: true, // worsen cpu load as it does not download in format but converts after download (ffmpeg)
+        // audioFormat: 'mp3', // see above
+        // audioQuality: 0,
+        addHeader: [ // recommended
+          'referer:youtube.com',
+          'user-agent:googlebot'
+        ]
+      })
+    ])
+
+
+    await interaction.editReply(formatStandard({
+      name: 'Vidéo YouTube',
+      description: file.title || 'nom inconnu',
+      thumbnail: file.thumbnail
+    })) // TODO desc
+
+    return String(join(__dirname, PATH_TO_ASSETS, PATH_TO_TEMP, `${file.id}.${file.ext}`)) || null // TODO
   }
 }
 module.exports = {
@@ -76,6 +125,11 @@ module.exports = {
       .setName('fichier')
       .setDescription('Jouer un fichier audio personnel')
       .addAttachmentOption(option => option.setName(FILE).setDescription("Fichier audio").setRequired(true))
+      .addChannelOption(option => option.setName(CHANNEL).setDescription("Canal à rejoindre").addChannelTypes(ChannelType.GuildVoice)))
+    .addSubcommand(subcommand => subcommand
+      .setName('youtube')
+      .setDescription('Jouer le son d\'une vidéo YouTube')
+      .addStringOption(option => option.setName(URL).setDescription("Lien de la vidéo YouTube").setRequired(true))
       .addChannelOption(option => option.setName(CHANNEL).setDescription("Canal à rejoindre").addChannelTypes(ChannelType.GuildVoice))),
 
   async execute(interaction: ChatInputCommandInteraction) {
@@ -117,11 +171,19 @@ module.exports = {
 
     const subscription = connection.subscribe(player)
 
+
+    if (!existsSync(file)) {
+      logger.error(`File ${file} not found`)
+      await interaction.editReply(formatError('Le fichier n\'a pas pu être lu'))
+      return
+    }
+
+    logger.info(`Playing file ${file}...`)
     player.play(createAudioResource(file))
 
     player.on(AudioPlayerStatus.AutoPaused, async () => {
-      await wait(1000)
-      subscription?.unsubscribe()
+      // await wait(1000)
+      // subscription?.unsubscribe()
     })
   },
 } as ChatInputCommand;
