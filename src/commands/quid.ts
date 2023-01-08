@@ -10,8 +10,9 @@ module.exports = {
     const embed1 = new EmbedBuilder()
       .setColor('#09a99d')
       .setFields(
-        {name: '/son liste', value: 'Permet de jouer un son issue d\'une liste prédéfinie'},
-        {name: '/son fichier', value: 'Permet de jouer un son à partir d\'un fichier audio personnel'},
+        {name: '/son liste <choix> <?salon>', value: 'Permet de jouer un son issue d\'une liste prédéfinie'},
+        {name: '/son fichier <pièce jointe> <?salon>', value: 'Permet de jouer un son à partir d\'un fichier audio personnel'},
+        {name: '/son youtube <url> <?salon>', value: 'Permet de jouer une vidéo YouTube'},
         )
     const embed2 = new EmbedBuilder()
       .setColor('#09a99d')
